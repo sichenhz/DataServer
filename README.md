@@ -1,14 +1,7 @@
-### 如何使用-SCSideBarController
+### How to run DataServer
 
-![icon](http://img01.taobaocdn.com/imgextra/i1/135480037/TB2dK5KcXXXXXXTXpXXXXXXXXXX_!!135480037.gif)
+1.You should run DataServer and DataStreamGenerator first as they are both servers.
 
-####创建新类, 导入主头文件并继承
+2.Then you should run Worker as it is a slave of DataServer
 
-    #import "SCSideBarController.h"
-    @interface ViewController : SCSideBarController
-    @end
-
-1.实例化一些控制器, 并添加为当前类的子控制器
-
-    UIViewController *vc = [[UIViewController alloc] init];
-    [self addChildViewController:vc];
+3.Finally you can run Client
