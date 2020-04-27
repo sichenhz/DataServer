@@ -57,6 +57,7 @@ public class Worker {
 				/* --- 2 to search a number of tweets containing a specific words ------- */
 				/* --- 3 to search a number of tweets from a specific airline ----------- */
 				/* --- 4 to find the most frequent character in a tweet by a tweet ID --- */
+				//test
 				String result = "completed: " + text;
 				out.writeUTF(result);
 			}
