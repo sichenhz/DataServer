@@ -1,8 +1,8 @@
 ### How to run DataServer
 
-1. Configure the Tweets.txt's absolute path to a parameter in Run Configurations.
+1. Configure the Tweets.txt's absolute path to a parameter of DataStreamGenerator in Run Configurations.
 ``` bash
-String txtFile = args[0];
+String txtFile = args[0]; /Users/Jason/Github/KIT318Assign2/Tweets.txt
 ```
 
 2. You should run DataServer and DataStreamGenerator first as they are both servers.
