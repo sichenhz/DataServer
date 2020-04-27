@@ -88,4 +88,13 @@ public class Worker {
 		/* --- type 4 means find the most frequent character in a tweet by a tweet ID --- */
 		return text + " Time consuming: xxx seconds";
 	}
+
+	/*
+	 * Function for searching text by ID
+	*/
+	public String searchTextByID(int tweetID ) {
+		
+		return " ";
+	}
+	
 }
