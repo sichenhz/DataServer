@@ -1,7 +1,6 @@
 ### How to run DataServer
 
 1. Configure the Tweets.txt's absolute path to a parameter in Run Configurations.
----
 ``` bash
 String txtFile = args[0];
 ```
