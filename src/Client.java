@@ -70,14 +70,14 @@ public class Client {
 						// Send an option to the server
 						option = scanner.nextLine();
 						
-						/* -----------------------------TODO------------------------------ */
-						/* --- 1. Randomly generate a deadline(time) --------------------- */
-						/* --- 2. Send the option appending the deadline to the server --- */
-						/* --------------------------------------------------------------- */
-
 						out.writeUTF(option);
 
-						if (option.equalsIgnoreCase("1") || option.equalsIgnoreCase("2") || option.equalsIgnoreCase("3") || option.equalsIgnoreCase("4") || option.equalsIgnoreCase("5")) {
+						if (option.equalsIgnoreCase("1") || option.equalsIgnoreCase("2") || option.equalsIgnoreCase("3") || option.equalsIgnoreCase("4")) {
+							System.out.println(in.readUTF());
+							out.writeUTF(appendingDeadline(scanner.nextLine()));
+							System.out.println(in.readUTF());
+							
+						} else if (option.equalsIgnoreCase("5")) {
 							System.out.println(in.readUTF());
 							out.writeUTF(scanner.nextLine());
 							System.out.println(in.readUTF());
@@ -110,5 +110,15 @@ public class Client {
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+	}
+	
+	public static String appendingDeadline(String option) {
+		/* --------------------------------------TODO 1------------------------------------------ */
+		/* --- 1. Randomly generate a deadline(time), there can also be no deadline ------------- */
+		/* --- 2. If there is a deadline(time), the server will execute the query first --------- */
+		/* --- 3. If there is a no deadline(time), the server will execute the query in order --- */
+		/* --- 4. Send the option appending the deadline to the server -------------------------- */
+		/* -------------------------------------------------------------------------------------- */
+		return option + "	deadline";
 	}
 }

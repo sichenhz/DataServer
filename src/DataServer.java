@@ -13,19 +13,26 @@ public class DataServer {
 		
 		System.out.println("Data Server Started ....");
 
+		/* ------------------------------TODO--------------------------------- */
+		/* --- 1. Create a instance on Nectar Cloud for a worker ------------- */
+		/* --- 2. Set a limited storage capacity for the worker -------------- */
+		/* --- 3. Once the storage limit is reached, Create a new instance --- */
+		/* --- Now we only have a local woker with port 9001 and 9002. ------- */
+		/* --- We can finally do this feature. ------------------------------- */
 		ServerSocket ss_database = new ServerSocket(9001);
 		ServerSocket ss_handle = new ServerSocket(9002);
 
 		Socket s_database = ss_database.accept();
 		Socket s_handle = ss_handle.accept();
 
+		// Worker to store Tweets data
 		new Thread(new Runnable() {
 			public void run() {
 				insertTweets(s_database);
 			}
 		}).start();
 		
-		// Workers to handle the query
+		// Worker to handle the query
 		new Thread(new Runnable() {
 			public void run() {
 				handleQuery(s_handle);
@@ -56,10 +63,6 @@ public class DataServer {
 			Socket client = new Socket(InetAddress.getLocalHost(), 9000);
 			DataInputStream clientIn = new DataInputStream(client.getInputStream());
 			
-			/* ----TODO------------------------------------------------ */
-			/* --- 1. Support multiple workers ------------------------ */
-			/* --- 2. Set a limited storage capacity for each worker--- */
-			/* -------------------------------------------------------- */
 			int capacity = 1000;
 			int counter = 0;
 			while (counter < capacity) {
@@ -202,7 +205,7 @@ public class DataServer {
 						} else if (option.equalsIgnoreCase("5")) {
 
 							out.writeUTF("Enter a query ID:");
-							String result = result(in.readUTF(), password);
+							String result = getResult(in.readUTF(), password);
 							out.writeUTF(result);
 
 						} else if (option.equalsIgnoreCase("6")) {
@@ -224,11 +227,27 @@ public class DataServer {
 		}
 	}
 
+	public static String getResult(String queryID, String password) {
+		String result = "Invalid query ID";
+		synchronized (queries) {
+			for (int i = 0; i < queries.size(); i++) {
+				HashMap<String, String> query = queries.get(i);
+				if (queryID.equalsIgnoreCase(query.get("queryID")) && password.equalsIgnoreCase(query.get("password"))) {
+					result = "Your result is " + query.get("result") + ".";
+					break;
+				}
+			}
+		}
+		return result;
+	}
+	
 	public static String insertQuery(String text, String password, int type) {
-		/* -----------------------------TODO------------------------------------------ */
-		/* --- 1. Parse the deadline(time) from the text value------------------------ */
-		/* --- 2. Parse the text from the text value --------------------------------- */
-		/* ----3. Insert the query HashMap into a ArrayList in chronological order --- */
+		/* --------------------------------------TODO 2------------------------------------------------- */
+		/* --- 1. Parse the text from the text value --------------------------------------------------- */
+		/* --- 2. Parse the deadline(time) from the text value------------------------------------------ */
+		/* --- 3. If there is no deadline(time), add the query into queries ---------------------------- */
+		/* --- 4. If there is a deadline(time), insert the query into queries in chronological order --- */
+		/* --------------------------------------------------------------------------------------------- */
 		Map<String, String> query = new HashMap<String, String>();
 		String queryID;
 		synchronized (queries) {
@@ -251,20 +270,5 @@ public class DataServer {
 		}
 
 		return queryID;
-	}
-
-	public static String result(String queryID, String password) {
-		String result = "Invalid query ID";
-		synchronized (queries) {
-			for (int i = 0; i < queries.size(); i++) {
-				HashMap<String, String> query = queries.get(i);
-				if (queryID.equalsIgnoreCase(query.get("queryID"))
-						&& password.equalsIgnoreCase(query.get("password"))) {
-					result = "Your result is " + query.get("result") + ".";
-					break;
-				}
-			}
-		}
-		return result;
 	}
 }

@@ -23,10 +23,7 @@ public class Worker {
 				tweetMap.put("airline", tweet[2]);
 				tweetMap.put("text", tweet[3]);
 				tweetMap.put("tweet_created", tweet[4]);
-
-				synchronized (tweets) {
-					tweets.add((HashMap<String, String>) tweetMap);
-				}
+				tweets.add((HashMap<String, String>) tweetMap);
 			}
 		} catch (NullPointerException e) {
 			System.out.println("Exception: Client Disconnected");
@@ -51,15 +48,7 @@ public class Worker {
 				String type = queryArray[0];
 				String text = queryArray[1];
 
-				/* ---------------------------------TODO--------------------------------- */
-				/* --- Handle 4 types of operations to get the result ------------------- */
-				/* --- 1 to search a text by a tweet ID --------------------------------- */
-				/* --- 2 to search a number of tweets containing a specific words ------- */
-				/* --- 3 to search a number of tweets from a specific airline ----------- */
-				/* --- 4 to find the most frequent character in a tweet by a tweet ID --- */
-				//test
-				String result = "completed: " + text;
-				out.writeUTF(result);
+				out.writeUTF(executeQuery(type, text));
 			}
 		} catch (NullPointerException e) {
 			System.out.println("Exception: Client Disconnected");
@@ -69,7 +58,7 @@ public class Worker {
 			System.out.println(e);
 		}
 	}
-
+	
 	public static void main(String[] args) throws Exception {
 
 		System.out.println("Worker Started ....");
@@ -88,5 +77,15 @@ public class Worker {
 				handleQuery(s_handle);
 			}
 		}).start();
+	}
+	
+	public static String executeQuery(String type, String text) {
+		/* ---------------------------------TODO 3--------------------------------------- */
+		/* --- Handle 4 types of operations to get the result --------------------------- */
+		/* --- type 1 means to search a text by a tweet ID ------------------------------ */
+		/* --- type 2 means search a number of tweets containing a specific words ------- */
+		/* --- type 3 means search a number of tweets from a specific airline ----------- */
+		/* --- type 4 means find the most frequent character in a tweet by a tweet ID --- */
+		return text + " Time consuming: xxx seconds";
 	}
 }
