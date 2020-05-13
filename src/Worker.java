@@ -119,10 +119,11 @@ public class Worker {
 	 * Test passed
 	 */
 	private static String searchTextByID(String tweetID) {
-		if (tweets.size() != 0)
+		
+		synchronized(tweets)
 		{
-			synchronized(tweets)
-			{
+			if (tweets.size() != 0) {
+
 				for (int i = 0; i < tweets.size(); i++) {
 
 					Map<String, String> map = tweets.get(i);
@@ -131,25 +132,23 @@ public class Worker {
 						return map.get("text");
 					}
 				}
+
 			}
-		
+			return "No tweets match ID";
 		}
-		return "No tweets match ID";
 	}
 	
 	/**
-	 * 
 	 * @param tweetID
 	 * @return Most frequent character in a text.
 	 */
 	private static String findMostFrequentChar(String tweetID)
 	{
-		if(tweets.size()!= 0)
+		synchronized (tweets) 
 		{
-			synchronized(tweets)
-			{
-				for (int i = 0; i < tweets.size(); i++) 
-				{
+			if (tweets.size() != 0) {
+
+				for (int i = 0; i < tweets.size(); i++) {
 
 					Map<String, String> map = tweets.get(i);
 					System.out.println("String is" + map.get("text"));
@@ -157,18 +156,18 @@ public class Worker {
 						return String.valueOf(freqCharFinder(map.get("text")));
 					}
 				}
+
 			}
-		
+			return "Tweet doesn't exist";
 		}
 		
-		return "Tweet doesn't exist";
 	}
 	
 	/**
 	 * @param string as the tweet text
 	 * @return Find the most Frequent Character
 	 */
-	public static char freqCharFinder(String string) {
+	private static char freqCharFinder(String string) {
 		final int ASCII_SIZE = 256;
 		String cleanString = " ";
 
@@ -209,11 +208,12 @@ public class Worker {
 	 * find how man tweets containing a specific word
 	 */
 	 
-	public static String searchTweetByWord(String tweetWord)
+	private static String searchTweetByWord(String tweetWord)
 	{
-		int count = 0;
-		if (tweets.size() != 0) {
-			synchronized (tweets) {
+		synchronized (tweets) 
+		{
+			int count = 0;
+			if (tweets.size() != 0) {
 
 				for (int i = 0; i < tweets.size(); i++) {
 
@@ -222,27 +222,29 @@ public class Worker {
 					if (map.get("text").toLowerCase().contains(tweetWord.toLowerCase())) {
 						count++;
 					}
+
+					return "There are " + String.valueOf(count) + " containing " + tweetWord;
 				}
-				return "There are " + String.valueOf(count) + " containing " + tweetWord;
+
 			}
 
+			return tweetWord + " doesn't exist in any tweets";
 		}
 		
-		return tweetWord + " doesn't exist in any tweets";
 	}
 	
 	/**
 	 * @param airlineName
 	 * search a number of tweets from a specific airline
 	 */
-	public static String searchTweetByAirline(String airlineName)
+	private static String searchTweetByAirline(String airlineName)
 	{
-		int count = 0;
-		
-		if (tweets.size() != 0) {
-			
-			synchronized (tweets) 
-			{
+		synchronized (tweets) 
+		{
+			int count = 0;
+
+			if (tweets.size() != 0) {
+
 				for (int i = 0; i < tweets.size(); i++) {
 
 					Map<String, String> map = tweets.get(i);
@@ -253,9 +255,9 @@ public class Worker {
 				}
 				return "There are " + String.valueOf(count) + " containing " + airlineName;
 			}
-		}
 
-		return airlineName + "doesn't exist in any tweets";
+			return airlineName + "doesn't exist in any tweets";
+		}
 
 	}
 		
