@@ -27,7 +27,7 @@ public class DataStreamGenerator {
 						out.writeUTF(line);
 					}
 					counter++;
-					Thread.sleep(5000 * timeInterval);
+					Thread.sleep(1000 * timeInterval);
 					out.flush();
 				}
 

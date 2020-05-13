@@ -110,7 +110,7 @@ public class DataServer {
 			System.out.println(e);
 		}
 	}
-
+	
 	public static void communicateWithClients(Socket s) {
 		try {
 			while (true) {
@@ -226,7 +226,14 @@ public class DataServer {
 			System.out.println(e);
 		}
 	}
-
+	
+	/**
+	 * 
+	 * @param queryID
+	 * @param password
+	 * @return
+	 */
+	
 	public static String getResult(String queryID, String password) {
 		String result = "Invalid query ID";
 		synchronized (queries) {
@@ -241,6 +248,13 @@ public class DataServer {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @param text
+	 * @param password
+	 * @param type
+	 * @return
+	 */
 	public static String insertQuery(String text, String password, int type) {
 		/* --------------------------------------TODO 2------------------------------------------------- */
 		/* --- 1. Parse the text from the text value --------------------------------------------------- */

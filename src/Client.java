@@ -119,6 +119,15 @@ public class Client {
 		/* --- 3. If there is a no deadline(time), the server will execute the query in order --- */
 		/* --- 4. Send the option appending the deadline to the server -------------------------- */
 		/* -------------------------------------------------------------------------------------- */
-		return option + "	deadline";
+		Random rand = new Random();
+		int deadline = rand.nextInt(10000); // 10 seconds in milliseconds
+
+		// assuming that any deadline less than a second is regarded as ASAP
+		if (deadline < 1000) {
+			return option; // appends no deadline
+		} else {
+			return option + " " + deadline;
+		}
+		
 	}
 }
