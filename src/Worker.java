@@ -121,15 +121,18 @@ public class Worker {
 	private static String searchTextByID(String tweetID) {
 		if (tweets.size() != 0)
 		{
+			synchronized(tweets)
+			{
+				for (int i = 0; i < tweets.size(); i++) {
 
-			for (int i = 0; i < tweets.size(); i++) {
+					Map<String, String> map = tweets.get(i);
 
-				Map<String, String> map = tweets.get(i);
-
-				if (map.get("tweet_id").equals(tweetID)) {
-					return map.get("text");
+					if (map.get("tweet_id").equals(tweetID)) {
+						return map.get("text");
+					}
 				}
 			}
+		
 		}
 		return "No tweets match ID";
 	}
@@ -143,15 +146,19 @@ public class Worker {
 	{
 		if(tweets.size()!= 0)
 		{
-			for (int i = 0; i < tweets.size(); i++) 
+			synchronized(tweets)
 			{
+				for (int i = 0; i < tweets.size(); i++) 
+				{
 
-				Map<String, String> map = tweets.get(i);
-				System.out.println("String is" + map.get("text"));
-				if (map.get("tweet_id").equals(tweetID)) {
-					return String.valueOf(freqCharFinder(map.get("text")));
+					Map<String, String> map = tweets.get(i);
+					System.out.println("String is" + map.get("text"));
+					if (map.get("tweet_id").equals(tweetID)) {
+						return String.valueOf(freqCharFinder(map.get("text")));
+					}
 				}
 			}
+		
 		}
 		
 		return "Tweet doesn't exist";
@@ -205,18 +212,20 @@ public class Worker {
 	public static String searchTweetByWord(String tweetWord)
 	{
 		int count = 0;
-		if (tweets.size() != 0)
-		{
+		if (tweets.size() != 0) {
+			synchronized (tweets) {
 
-			for (int i = 0; i < tweets.size(); i++) {
+				for (int i = 0; i < tweets.size(); i++) {
 
-				Map<String, String> map = tweets.get(i);
-				
-				if (map.get("text").toLowerCase().contains(tweetWord.toLowerCase())) {
-					count++;
+					Map<String, String> map = tweets.get(i);
+
+					if (map.get("text").toLowerCase().contains(tweetWord.toLowerCase())) {
+						count++;
+					}
 				}
+				return "There are " + String.valueOf(count) + " containing " + tweetWord;
 			}
-			return "There are " + String.valueOf(count) + " containing " + tweetWord;
+
 		}
 		
 		return tweetWord + " doesn't exist in any tweets";
@@ -230,20 +239,22 @@ public class Worker {
 	{
 		int count = 0;
 		
-		if (tweets.size() != 0)
-		{
+		if (tweets.size() != 0) {
+			
+			synchronized (tweets) 
+			{
+				for (int i = 0; i < tweets.size(); i++) {
 
-			for (int i = 0; i < tweets.size(); i++) {
+					Map<String, String> map = tweets.get(i);
 
-				Map<String, String> map = tweets.get(i);
-
-				if (map.get("airline").toLowerCase().contains(airlineName.toLowerCase())) {
-					count++;
+					if (map.get("airline").toLowerCase().contains(airlineName.toLowerCase())) {
+						count++;
+					}
 				}
+				return "There are " + String.valueOf(count) + " containing " + airlineName;
 			}
-			return "There are " + String.valueOf(count) + " containing " + airlineName;
 		}
-		
+
 		return airlineName + "doesn't exist in any tweets";
 
 	}
