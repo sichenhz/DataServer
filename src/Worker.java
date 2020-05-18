@@ -105,8 +105,8 @@ public class Worker {
 		{
 			//timer starts
 			searchTextByID(text);
-			//timer ends
-			return "It takes " + " time " ;
+//			//timer ends
+//			return "It takes " + " time " ;
 			//return searchTextByID(text);
 		}else if(type.equals("2"))
 		{
