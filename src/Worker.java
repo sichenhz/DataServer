@@ -7,7 +7,6 @@ import java.util.*;
 /* --- 2. Write the processing time function 		------------------------------ */
 /* --- type 2 means search a number of tweets containing a specific words ------- */
 
-
 public class Worker {
 	
 	static ArrayList<HashMap<String, String>> tweets = new ArrayList<>();
@@ -23,9 +22,9 @@ public class Worker {
 			// Infinite loop to establish communications
 			while (true) {
 				
-				// Read a tweet string from the server
+				//Read a tweet string from the server
 				String str = in.readUTF();
-				System.out.println("Tweet saved: " + str);
+//				System.out.println("Tweet saved: " + str);
 				String[] tweet = str.split("\t");
 				Map<String, String> tweetMap = new HashMap<String, String>();
 				tweetMap.put("tweet_id", tweet[0]);
@@ -34,11 +33,6 @@ public class Worker {
 				tweetMap.put("text", tweet[3]);
 				tweetMap.put("tweet_created", tweet[4]);
 				tweets.add((HashMap<String, String>) tweetMap);
-				System.out.println(searchTweetByWord("we"));
-				System.out.println(searchTweetByAirline("delta"));
-				
-				
-
 			}
 			
 		} catch (NullPointerException e) {
@@ -67,7 +61,9 @@ public class Worker {
 				String[] queryArray = queryString.split("\t");
 				String type = queryArray[0];
 				String text = queryArray[1];
+				
 				out.writeUTF(executeQuery(type, text));	
+				
 			}
 		} catch (NullPointerException e) {
 			System.out.println("Exception: Client Disconnected");
@@ -96,7 +92,6 @@ public class Worker {
 			}
 		}).start();
 		
-		
 	}
 	
 	public static String executeQuery(String type, String text) {
@@ -106,10 +101,26 @@ public class Worker {
 		/* --- type 2 means search a number of tweets containing a specific words ------- */
 		/* --- type 3 means search a number of tweets from a specific airline ----------- */
 		/* --- type 4 means find the most frequent character in a tweet by a tweet ID(Done) --- */
-		
-
-		return text + " Time consuming: xxx seconds";
-		
+		if(type.equals("1"))
+		{
+			//timer starts
+			searchTextByID(text);
+			//timer ends
+			return "It takes " + " time " ;
+			//return searchTextByID(text);
+		}else if(type.equals("2"))
+		{
+			return searchTweetByWord(text);
+		}else if(type.equals("3"))
+		{
+			return searchTweetByAirline(text);
+		}else if(type.equals("4"))
+		{
+			return findMostFrequentChar(text) + " Time consuming: xxx seconds";
+		} 
+	
+		return "nothing found";
+			
 	}
 	
 	/** 
@@ -119,7 +130,7 @@ public class Worker {
 	 * Test passed
 	 */
 	private static String searchTextByID(String tweetID) {
-		
+		//start a timer
 		synchronized(tweets)
 		{
 			if (tweets.size() != 0) {
@@ -129,6 +140,7 @@ public class Worker {
 					Map<String, String> map = tweets.get(i);
 
 					if (map.get("tweet_id").equals(tweetID)) {
+						//end a timer 
 						return map.get("text");
 					}
 				}
@@ -136,6 +148,7 @@ public class Worker {
 			}
 			return "No tweets match ID";
 		}
+		
 	}
 	
 	/**
@@ -207,9 +220,9 @@ public class Worker {
 	 * @param tweet
 	 * find how man tweets containing a specific word
 	 */
-	 
 	private static String searchTweetByWord(String tweetWord)
 	{
+		System.out.println("tweetWord is " + tweetWord);
 		synchronized (tweets) 
 		{
 			int count = 0;
@@ -239,6 +252,7 @@ public class Worker {
 	 */
 	private static String searchTweetByAirline(String airlineName)
 	{
+		System.out.println("airlinename is " + airlineName);
 		synchronized (tweets) 
 		{
 			int count = 0;
