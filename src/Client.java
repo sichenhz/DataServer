@@ -74,7 +74,8 @@ public class Client {
 
 						if (option.equalsIgnoreCase("1") || option.equalsIgnoreCase("2") || option.equalsIgnoreCase("3") || option.equalsIgnoreCase("4")) {
 							System.out.println(in.readUTF());
-							out.writeUTF(appendingDeadline(scanner.nextLine()));
+							//out.writeUTF(appendingDeadline(scanner.nextLine()));
+							out.writeUTF(scanner.nextLine());
 							System.out.println(in.readUTF());
 							
 						} else if (option.equalsIgnoreCase("5")) {
@@ -112,7 +113,8 @@ public class Client {
 		}
 	}
 	
-	public static String appendingDeadline(String option) {
+	public static String appendingDeadline(String option) 
+	{
 		/* --------------------------------------TODO 1------------------------------------------ */
 		/* --- 1. Randomly generate a deadline(time), there can also be no deadline ------------- */
 		/* --- 2. If there is a deadline(time), the server will execute the query first --------- */

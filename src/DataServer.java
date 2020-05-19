@@ -233,14 +233,13 @@ public class DataServer {
 	 * @param password
 	 * @return
 	 */
-	
 	public static String getResult(String queryID, String password) {
 		String result = "Invalid query ID";
 		synchronized (queries) {
 			for (int i = 0; i < queries.size(); i++) {
 				HashMap<String, String> query = queries.get(i);
 				if (queryID.equalsIgnoreCase(query.get("queryID")) && password.equalsIgnoreCase(query.get("password"))) {
-					result = "Your result is " + query.get("result") + ".";
+					result = query.get("result");
 					break;
 				}
 			}
@@ -270,14 +269,14 @@ public class DataServer {
 		String result = "processing";
 		String deadline = "";
 		String queryType = String.valueOf(type);
-
+		
 		query.put("queryID", queryID);
 		query.put("result", result);
 		query.put("deadline", deadline);
 		query.put("password", password);
 		query.put("queryType", queryType);
 		query.put("text", text);
-
+		
 		synchronized (queries) {
 			queries.add((HashMap<String, String>) query);
 			System.out.println("New query added:" + query);
