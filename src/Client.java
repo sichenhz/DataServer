@@ -74,7 +74,7 @@ public class Client {
 
 						if (option.equalsIgnoreCase("1") || option.equalsIgnoreCase("2") || option.equalsIgnoreCase("3") || option.equalsIgnoreCase("4")) {
 							System.out.println(in.readUTF());
-//							out.writeUTF(appendingDeadline(scanner.nextLine()));
+							//out.writeUTF(appendingDeadline(scanner.nextLine()));
 							out.writeUTF(scanner.nextLine());
 							System.out.println(in.readUTF());
 							

@@ -18,13 +18,12 @@ public class Worker {
 			DataInputStream in = new DataInputStream(s.getInputStream());
 				
 			
-			
 			// Infinite loop to establish communications
 			while (true) {
 				
 				//Read a tweet string from the server
 				String str = in.readUTF();
-//				System.out.println("Tweet saved: " + str);
+				//System.out.println("Tweet saved: " + str);
 				String[] tweet = str.split("\t");
 				Map<String, String> tweetMap = new HashMap<String, String>();
 				tweetMap.put("tweet_id", tweet[0]);
@@ -61,8 +60,10 @@ public class Worker {
 				String[] queryArray = queryString.split("\t");
 				String type = queryArray[0];
 				String text = queryArray[1];
-				
-				out.writeUTF(executeQuery(type, text));	
+				long start = System.currentTimeMillis(); 
+				String queryResultString = executeQuery(type, text);
+				long end = System.currentTimeMillis(); 
+				out.writeUTF("Time taken: " + (end-start) + " ms to " + "get result: "+ queryResultString);	
 				
 			}
 		} catch (NullPointerException e) {
@@ -101,13 +102,10 @@ public class Worker {
 		/* --- type 2 means search a number of tweets containing a specific words ------- */
 		/* --- type 3 means search a number of tweets from a specific airline ----------- */
 		/* --- type 4 means find the most frequent character in a tweet by a tweet ID(Done) --- */
+		
 		if(type.equals("1"))
 		{
-			//timer starts
-			searchTextByID(text);
-//			//timer ends
-//			return "It takes " + " time " ;
-			//return searchTextByID(text);
+			return searchTextByID(text);
 		}else if(type.equals("2"))
 		{
 			return searchTweetByWord(text);
@@ -116,10 +114,10 @@ public class Worker {
 			return searchTweetByAirline(text);
 		}else if(type.equals("4"))
 		{
-			return findMostFrequentChar(text) + " Time consuming: xxx seconds";
+			return findMostFrequentChar(text);
 		} 
 	
-		return "nothing found";
+		return "Cannot find any result matching result" + text ;
 			
 	}
 	
@@ -222,7 +220,6 @@ public class Worker {
 	 */
 	private static String searchTweetByWord(String tweetWord)
 	{
-		System.out.println("tweetWord is " + tweetWord);
 		synchronized (tweets) 
 		{
 			int count = 0;
@@ -252,7 +249,6 @@ public class Worker {
 	 */
 	private static String searchTweetByAirline(String airlineName)
 	{
-		System.out.println("airlinename is " + airlineName);
 		synchronized (tweets) 
 		{
 			int count = 0;
