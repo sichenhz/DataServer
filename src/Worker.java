@@ -63,7 +63,8 @@ public class Worker {
 				long start = System.currentTimeMillis(); 
 				String queryResultString = executeQuery(type, text);
 				long end = System.currentTimeMillis(); 
-				out.writeUTF("Time taken: " + (end-start) + " ms to " + "get result: "+ queryResultString);	
+				out.writeUTF((end-start) + "	" + queryResultString);	
+//				out.writeUTF("Time taken: " + (end-start) + " ms to " + "get result:	"+ queryResultString);	
 				
 			}
 		} catch (NullPointerException e) {
@@ -77,10 +78,10 @@ public class Worker {
 	
 	public static void main(String[] args) throws Exception {
 
-		System.out.println("Worker Started ....");
+		System.out.println("Worker Started.");
 
-		Socket s_database = new Socket(InetAddress.getLocalHost(), 9001);
-		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9002);
+		Socket s_database = new Socket(InetAddress.getLocalHost(), 9002);
+		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9003);
 		new Thread(new Runnable() {
 			public void run() {	
 				receiveTweets(s_database);
@@ -137,6 +138,7 @@ public class Worker {
 
 					Map<String, String> map = tweets.get(i);
 
+					System.out.println(tweetID + "---" + map.get("tweet_id"));
 					if (map.get("tweet_id").equals(tweetID)) {
 						//end a timer 
 						return map.get("text");
@@ -226,16 +228,18 @@ public class Worker {
 			if (tweets.size() != 0) {
 
 				for (int i = 0; i < tweets.size(); i++) {
-
+					
 					Map<String, String> map = tweets.get(i);
+					System.out.println(map.get("text").toLowerCase());
+					System.out.println(tweetWord.toLowerCase());
 
 					if (map.get("text").toLowerCase().contains(tweetWord.toLowerCase())) {
 						count++;
 					}
-
-					return "There are " + String.valueOf(count) + " containing " + tweetWord;
 				}
 
+				return String.valueOf(count);
+//				return "There are " + String.valueOf(count) + " containing " + tweetWord;
 			}
 
 			return tweetWord + " doesn't exist in any tweets";
@@ -263,7 +267,8 @@ public class Worker {
 						count++;
 					}
 				}
-				return "There are " + String.valueOf(count) + " containing " + airlineName;
+				return String.valueOf(count);
+//				return "There are " + String.valueOf(count) + " containing " + airlineName;
 			}
 
 			return airlineName + "doesn't exist in any tweets";

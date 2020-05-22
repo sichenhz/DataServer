@@ -7,21 +7,22 @@ import java.io.*;
 public class DataStreamGenerator {
 
 	public static void main(String[] args) throws Exception {
-
-		System.out.println("Data Stream Generator Started ....");
-
+		
+		System.out.println("Data Stream Generator Started.");
+		
 		try {
-
-			ServerSocket ss = new ServerSocket(9000);
+			
+			ServerSocket ss = new ServerSocket(9099);
 			Socket s = ss.accept();
-			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+	    	DataOutputStream out = new DataOutputStream(s.getOutputStream());  
 
 			String txtFile = args[0];
 			String line = "";
 			int counter = 0;
 			long timeInterval = 1L;
-			//FileReader was originally reading txtFile. Doesn't seem right. XJ
+			
 			try (BufferedReader br = new BufferedReader(new FileReader(txtFile))) {
+				
 				while ((line = br.readLine()) != null) {
 					if (counter > 0) {
 						out.writeUTF(line);
@@ -35,8 +36,8 @@ public class DataStreamGenerator {
 				ss.close();
 
 			} catch (Exception e) {
-				e.printStackTrace();
-			}
+	            e.printStackTrace();
+			}			
 		} catch (NullPointerException e) {
 			System.out.println("Exception: Client Disconnected");
 		} catch (IOException e) {

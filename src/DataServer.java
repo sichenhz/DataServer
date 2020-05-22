@@ -8,10 +8,11 @@ public class DataServer {
 
 	static ArrayList<String> passwords = new ArrayList<String>();
 	static ArrayList<HashMap<String, String>> queries = new ArrayList<HashMap<String, String>>();
+	static HashMap<String, String> indexesHashMap = new HashMap<String, String>();
 
 	public static void main(String[] args) throws Exception {
-		
-		System.out.println("Data Server Started ....");
+
+		System.out.println("Data Server Started.");
 
 		/* ------------------------------TODO--------------------------------- */
 		/* --- 1. Create a instance on Nectar Cloud for a worker ------------- */
@@ -19,28 +20,64 @@ public class DataServer {
 		/* --- 3. Once the storage limit is reached, Create a new instance --- */
 		/* --- Now we only have a local woker with port 9001 and 9002. ------- */
 		/* --- We can finally do this feature. ------------------------------- */
-		ServerSocket ss_database = new ServerSocket(9001);
-		ServerSocket ss_handle = new ServerSocket(9002);
-
-		Socket s_database = ss_database.accept();
-		Socket s_handle = ss_handle.accept();
-
 		// Worker to store Tweets data
 		new Thread(new Runnable() {
 			public void run() {
-				insertTweets(s_database);
-			}
-		}).start();
-		
-		// Worker to handle the query
-		new Thread(new Runnable() {
-			public void run() {
-				handleQuery(s_handle);
+				try {
+					// waiting the Tweet generator server
+					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
+
+					// run the first worker
+					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+					// open port 9000 for worker1 to save tweets
+					ServerSocket ss_worker1 = new ServerSocket(9000);
+					Socket s_worker1 = ss_worker1.accept();
+					System.out.println("Worker1 Database service starts to run.");
+
+					// open port 9001 for worker1 to handle query
+					handleQueryThreadStart(new ServerSocket(9001), 0);
+
+					// start inserting data into the worker1
+					insertTweets(s_worker1, s_generator, 10, 0);
+					System.out.println("Worker1 has reached the storage limit.");
+
+					// close socket and server socket on port 9000
+					s_worker1.close();
+					ss_worker1.close();
+					System.out.println("Worker1 Database service is over.");
+
+					// run the second worker
+					processFile("/Users/Jason/Github/DataServer/src/Worker2.jar");
+					// open port 9002 for worker2 to save tweets
+					ServerSocket ss_worker2 = new ServerSocket(9002);
+					Socket s_worker2 = ss_worker2.accept();
+					System.out.println("Worker2 Database service starts to run.");
+
+					// open port 9003 for worker2 to handle query
+					handleQueryThreadStart(new ServerSocket(9003), 1);
+
+					// start inserting data into the worker2
+					insertTweets(s_worker2, s_generator, 10, 1);
+					System.out.println("Worker2 has reached the storage limit.");
+
+					// close socket and server socket on port 9002
+					s_worker2.close();
+					ss_worker2.close();
+					System.out.println("Worker2 Database service is over.");
+
+				} catch (UnknownHostException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 			}
 		}).start();
 
 		// Clients to make a query
-		ServerSocket ss_query = new ServerSocket(9003);
+		ServerSocket ss_query = new ServerSocket(9098);
 		int counter = 0;
 		while (true) {
 			counter++;
@@ -55,30 +92,32 @@ public class DataServer {
 		}
 	}
 
-	public static void insertTweets(Socket s) {
+	// index: bind index(0 or 1) to a tweet ID for future query executions
+	public static void insertTweets(Socket s_worker, Socket s_generator, int maximumNumber, int index) {
 		try {
-			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+			DataOutputStream out = new DataOutputStream(s_worker.getOutputStream());
 
 			// receive tweet from Data Stream Generator
-			Socket client = new Socket(InetAddress.getLocalHost(), 9000);
-			DataInputStream clientIn = new DataInputStream(client.getInputStream());
-			
-			int capacity = 1000;
+
 			int counter = 0;
-			while (counter < capacity) {
+			while (counter < maximumNumber) {
 				// Read a tweet string from the server
-				String str = clientIn.readUTF();
-				String[] tweet = str.split("\t");
+				DataInputStream in = new DataInputStream(s_generator.getInputStream());
+				String tweetStr = in.readUTF();
+				String[] tweet = tweetStr.split("\t");
 
 				out.writeUTF(tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 				counter++;
+				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
+				
+				if (index == 0) {
+					indexesHashMap.put(tweet[0], "0");
+				} else {
+					indexesHashMap.put(tweet[0], "1");
+				}
 			}
-			// Close the streams and the client
-			clientIn.close();
-			client.close();
 
 			out.close();
-			s.close();
 
 		} catch (IOException e) {
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
@@ -86,9 +125,12 @@ public class DataServer {
 			System.out.println(e);
 		}
 	}
-	
-	public static void handleQuery(Socket s) {
+
+	public static void handleQuery(Socket s, int index) {
 		try {
+			
+			System.out.println("Worker" + (index + 1) + " Handle Query service starts to run.");
+
 			DataInputStream in = new DataInputStream(s.getInputStream());
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
@@ -97,12 +139,41 @@ public class DataServer {
 				synchronized (queries) {
 					if (queries.size() > counter) {
 						HashMap<String, String> query = queries.get(counter);
-						out.writeUTF(query.get("queryType") + "	" + query.get("text"));
-						query.put("result", in.readUTF());
+						// If current tweet is stored in worker1(index == 0) and the query type are 1 or 4
+						// If current tweet is stored in worker2(index == 1) and the query type are 1 or 4
+						// Then only one worker should do the query
+						if (query.get("index").length() > 0) {
+							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
+								query.put("result", in.readUTF());
+								System.out.println("Query execution ends, the result is: " + query.get("result"));
+							}
+							// If the query type are 2 or 3
+							// Then both workers should do the query
+							else if (query.get("index").equalsIgnoreCase("2")) {
+								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
+								String resultString = in.readUTF();
+								String[] resultStringArray_new = resultString.split("\t");
+								String timeConsumingString_new = resultStringArray_new[0];
+								String totalNumberString_new = resultStringArray_new[1];
+								if (query.get("result").equalsIgnoreCase("processing")) {
+									query.put("result", Double.parseDouble(timeConsumingString_new) + "	" + totalNumberString_new);
+									System.out.println("Query execution ends, the result is: " + query.get("result"));
+								} else {
+									String[] resultStringArray_old = query.get("result").split("\t");
+									String timeConsumingString_old = resultStringArray_old[0];
+									String totalNumberString_old = resultStringArray_old[1];
+									Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new) + Double.parseDouble(timeConsumingString_old);
+									int totalResult = Integer.parseInt(totalNumberString_new) + Integer.parseInt(totalNumberString_old);
+									query.put("result", totalTimeConsuming + "	" + totalResult);
+									System.out.println("Query execution ends, the result is: " + query.get("result"));
+								}
+							}
+						}
 						counter++;
 					}
 				}
-			}			
+			}
 
 		} catch (IOException e) {
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
@@ -110,7 +181,7 @@ public class DataServer {
 			System.out.println(e);
 		}
 	}
-	
+
 	public static void communicateWithClients(Socket s) {
 		try {
 			while (true) {
@@ -226,7 +297,7 @@ public class DataServer {
 			System.out.println(e);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param queryID
@@ -238,7 +309,8 @@ public class DataServer {
 		synchronized (queries) {
 			for (int i = 0; i < queries.size(); i++) {
 				HashMap<String, String> query = queries.get(i);
-				if (queryID.equalsIgnoreCase(query.get("queryID")) && password.equalsIgnoreCase(query.get("password"))) {
+				if (queryID.equalsIgnoreCase(query.get("queryID"))
+						&& password.equalsIgnoreCase(query.get("password"))) {
 					result = query.get("result");
 					break;
 				}
@@ -246,7 +318,7 @@ public class DataServer {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * 
 	 * @param text
@@ -255,12 +327,30 @@ public class DataServer {
 	 * @return
 	 */
 	public static String insertQuery(String text, String password, int type) {
-		/* --------------------------------------TODO 2------------------------------------------------- */
-		/* --- 1. Parse the text from the text value --------------------------------------------------- */
-		/* --- 2. Parse the deadline(time) from the text value------------------------------------------ */
-		/* --- 3. If there is no deadline(time), add the query into queries ---------------------------- */
-		/* --- 4. If there is a deadline(time), insert the query into queries in chronological order --- */
-		/* --------------------------------------------------------------------------------------------- */
+		/*
+		 * --------------------------------------TODO
+		 * 2-------------------------------------------------
+		 */
+		/*
+		 * --- 1. Parse the text from the text value
+		 * ---------------------------------------------------
+		 */
+		/*
+		 * --- 2. Parse the deadline(time) from the text
+		 * value------------------------------------------
+		 */
+		/*
+		 * --- 3. If there is no deadline(time), add the query into queries
+		 * ----------------------------
+		 */
+		/*
+		 * --- 4. If there is a deadline(time), insert the query into queries in
+		 * chronological order ---
+		 */
+		/*
+		 * -----------------------------------------------------------------------------
+		 * ----------------
+		 */
 		Map<String, String> query = new HashMap<String, String>();
 		String queryID;
 		synchronized (queries) {
@@ -269,19 +359,66 @@ public class DataServer {
 		String result = "processing";
 		String deadline = "";
 		String queryType = String.valueOf(type);
-		
+
 		query.put("queryID", queryID);
 		query.put("result", result);
 		query.put("deadline", deadline);
 		query.put("password", password);
 		query.put("queryType", queryType);
 		query.put("text", text);
-		
+				
+		if (queryType.equalsIgnoreCase("1") ||
+			queryType.equalsIgnoreCase("4")) {
+			// index == "0" means only worker1 should do the query
+			// index == "1" means only worker2 should do the query
+			// index == "" means both workers should not do the query
+			query.put("index", indexesHashMap.getOrDefault(text, ""));
+			// if there is no tweetID in indexesHashMap, means there must be no result in any databases, so give "no result" directly.
+			if (query.get("index").length() == 0) {
+				query.put("result", text + " doesn't exist in any tweets");
+			}
+		} else {
+			// index == "2" means both workers should do the query and need to put the answers together
+			query.put("index", "2");
+		}
+
 		synchronized (queries) {
 			queries.add((HashMap<String, String>) query);
 			System.out.println("New query added:" + query);
 		}
 
 		return queryID;
+	}
+
+	public static void handleQueryThreadStart(ServerSocket ss_worker, int index) {
+		// Worker to handle the query
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					Socket s_worker = ss_worker.accept();
+					handleQuery(s_worker, index);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}).start();
+	}
+
+	public static Process processFile(String path) {
+		Process process = null;
+		try {
+			process = Runtime.getRuntime().exec("java -jar " + path);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return process;
+	}
+
+	public static boolean canParseInt(String str) {
+		if (str == null) {
+			return false;
+		}
+		return str.matches("\\d+");
 	}
 }
