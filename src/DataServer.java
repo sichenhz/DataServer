@@ -29,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-//					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
@@ -108,8 +108,7 @@ public class DataServer {
 
 				out.writeUTF(tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 				counter++;
-				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	"
-						+ tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
+				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 
 				// index: bind index(0 or 1) to a tweet ID for future query executions
 				if (index == 0) {
@@ -144,14 +143,11 @@ public class DataServer {
 					if (queries.size() > counter) {
 						HashMap<String, String> query = queries.get(counter);
 						String resultString = "";
-						// If current tweet is stored in worker1(index == 0) and the query type are 1 or
-						// 4
-						// If current tweet is stored in worker2(index == 1) and the query type are 1 or
-						// 4
+						// If current tweet is stored in worker1(index == 0) and the query type are 1 or 4
+						// If current tweet is stored in worker2(index == 1) and the query type are 1 or 4
 						// Then only one worker should do the query
 						if (query.get("index").length() > 0) {
-							if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
-									|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
 								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
 								resultString = in.readUTF();
 							}
