@@ -188,9 +188,9 @@ public class DataServer {
 						if (resultString.length() > 0) {
 							synchronized (results) {
 								HashMap<String, String> result = results.get(counter);
-								result.put("result", resultString);
+								result.put("result", "$" + resultString);
 								System.out.println("Query" + query.get("queryID") + " execution ends, the result is: "
-										+ resultString);
+										+ result.get("result"));
 							}
 						}
 
