@@ -29,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+//					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
@@ -108,7 +108,8 @@ public class DataServer {
 
 				out.writeUTF(tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 				counter++;
-				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
+				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	"
+						+ tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 
 				// index: bind index(0 or 1) to a tweet ID for future query executions
 				if (index == 0) {
@@ -128,7 +129,7 @@ public class DataServer {
 	}
 
 	public static void handleQuery(Socket s, int index) {
-		
+
 		int counter = 0;
 
 		try {
@@ -143,11 +144,14 @@ public class DataServer {
 					if (queries.size() > counter) {
 						HashMap<String, String> query = queries.get(counter);
 						String resultString = "";
-						// If current tweet is stored in worker1(index == 0) and the query type are 1 or 4
-						// If current tweet is stored in worker2(index == 1) and the query type are 1 or 4
+						// If current tweet is stored in worker1(index == 0) and the query type are 1 or
+						// 4
+						// If current tweet is stored in worker2(index == 1) and the query type are 1 or
+						// 4
 						// Then only one worker should do the query
 						if (query.get("index").length() > 0) {
-							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+							if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
+									|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
 								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
 								resultString = in.readUTF();
 							}
@@ -185,7 +189,8 @@ public class DataServer {
 							synchronized (results) {
 								HashMap<String, String> result = results.get(counter);
 								result.put("result", resultString);
-								System.out.println("Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
+								System.out.println("Query" + query.get("queryID") + " execution ends, the result is: "
+										+ resultString);
 							}
 						}
 
@@ -197,13 +202,16 @@ public class DataServer {
 		} catch (IOException e) {
 			synchronized (results) {
 				HashMap<String, String> result = results.get(counter);
-				
-				// If any worker is closed and there is no result, change the result to "No results".
-				// If any alive worker still handling the query, the result will change back to a partial result.
+
+				// If any worker is closed and there is no result, change the result to "No
+				// results".
+				// If any alive worker still handling the query, the result will change back to
+				// a partial result.
 				if (result.get("result").equalsIgnoreCase("processing")) {
 					result.put("result", "No results");
 				}
-				System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID") + " is forced to end.");
+				System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID")
+						+ " is forced to end.");
 
 			}
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
@@ -339,7 +347,8 @@ public class DataServer {
 		synchronized (results) {
 			for (int i = 0; i < results.size(); i++) {
 				HashMap<String, String> result = results.get(i);
-				if (queryID.equalsIgnoreCase(result.get("queryID")) && password.equalsIgnoreCase(result.get("password"))) {
+				if (queryID.equalsIgnoreCase(result.get("queryID"))
+						&& password.equalsIgnoreCase(result.get("password"))) {
 					text = result.get("result");
 					break;
 				}
@@ -355,7 +364,7 @@ public class DataServer {
 	 * @param type
 	 * @return
 	 */
-	public static String insertQuery(String text, String password, int type) {
+	public synchronized static String insertQuery(String text, String password, int type) {
 		/*
 		 * --------------------------------------TODO
 		 * 2-------------------------------------------------
@@ -380,50 +389,48 @@ public class DataServer {
 		 * -----------------------------------------------------------------------------
 		 * ----------------
 		 */
-		synchronized (queries) {
-			Map<String, String> query = new HashMap<String, String>();
+		Map<String, String> query = new HashMap<String, String>();
 
-			String queryID = Integer.toString(queries.size());
-			
-			String deadline = "";
-			String queryType = String.valueOf(type);
+		String queryID = Integer.toString(queries.size());
 
-			query.put("queryID", queryID);
-			query.put("deadline", deadline);
-			query.put("queryType", queryType);
-			query.put("text", text);
+		String deadline = "";
+		String queryType = String.valueOf(type);
 
-			if (queryType.equalsIgnoreCase("1") || queryType.equalsIgnoreCase("4")) {
-				// index == "0" means only worker1 should do the query
-				// index == "1" means only worker2 should do the query
-				// index == "" means both workers should not do the query
-				query.put("index", indexesHashMap.getOrDefault(text, ""));
-				// if there is no tweetID in indexesHashMap, means there must be no result in
-				// any databases, so give "no result" directly.
+		query.put("queryID", queryID);
+		query.put("deadline", deadline);
+		query.put("queryType", queryType);
+		query.put("text", text);
 
-			} else {
-				// index == "2" means both workers should do the query and need to put the
-				// answers together
-				query.put("index", "2");
-			}
+		if (queryType.equalsIgnoreCase("1") || queryType.equalsIgnoreCase("4")) {
+			// index == "0" means only worker1 should do the query
+			// index == "1" means only worker2 should do the query
+			// index == "" means both workers should not do the query
+			query.put("index", indexesHashMap.getOrDefault(text, ""));
+			// if there is no tweetID in indexesHashMap, means there must be no result in
+			// any databases, so give "no result" directly.
 
-			queries.add((HashMap<String, String>) query);
-			System.out.println("New query added:" + query);
-
-			synchronized (results) {
-				Map<String, String> result = new HashMap<String, String>();
-				result.put("queryID", queryID);
-				result.put("result", "processing");
-				result.put("password", password);
-				
-				if (query.get("index").length() == 0) {
-					result.put("result", text + " doesn't exist in any tweets");
-				}
-				results.add((HashMap<String, String>) result);
-			}
-			
-			return queryID;
+		} else {
+			// index == "2" means both workers should do the query and need to put the
+			// answers together
+			query.put("index", "2");
 		}
+
+		queries.add((HashMap<String, String>) query);
+		System.out.println("New query added:" + query);
+
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("queryID", queryID);
+		result.put("result", "processing");
+		result.put("password", password);
+
+		if (query.get("index").length() == 0) {
+			result.put("result", text + " doesn't exist in any tweets");
+		}
+		synchronized (results) {
+			results.add((HashMap<String, String>) result);
+		}
+
+		return queryID;
 	}
 
 	public static void handleQueryThreadStart(ServerSocket ss_worker, int index) {
