@@ -29,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+//					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
@@ -47,24 +47,24 @@ public class DataServer {
 					ss_worker1.close();
 					System.out.println("Worker1 Database service is over.");
 
-					// run the second worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker2.jar");
-					// open port 9002 for worker2 to save tweets
-					ServerSocket ss_worker2 = new ServerSocket(9002);
-					Socket s_worker2 = ss_worker2.accept();
-					System.out.println("Worker2 Database service starts to run.");
-
-					// open port 9003 for worker2 to handle query
-					handleQueryThreadStart(new ServerSocket(9003), 1);
-
-					// start inserting data into the worker2
-					insertTweets(s_worker2, s_generator, 10, 1);
-					System.out.println("Worker2 has reached the storage limit.");
-
-					// close socket and server socket on port 9002
-					s_worker2.close();
-					ss_worker2.close();
-					System.out.println("Worker2 Database service is over.");
+//					// run the second worker
+//					processFile("/Users/Jason/Github/DataServer/src/Worker2.jar");
+//					// open port 9002 for worker2 to save tweets
+//					ServerSocket ss_worker2 = new ServerSocket(9002);
+//					Socket s_worker2 = ss_worker2.accept();
+//					System.out.println("Worker2 Database service starts to run.");
+//
+//					// open port 9003 for worker2 to handle query
+//					handleQueryThreadStart(new ServerSocket(9003), 1);
+//
+//					// start inserting data into the worker2
+//					insertTweets(s_worker2, s_generator, 10, 1);
+//					System.out.println("Worker2 has reached the storage limit.");
+//
+//					// close socket and server socket on port 9002
+//					s_worker2.close();
+//					ss_worker2.close();
+//					System.out.println("Worker2 Database service is over.");
 
 				} catch (UnknownHostException e) {
 					// TODO Auto-generated catch block
@@ -198,6 +198,8 @@ public class DataServer {
 			synchronized (results) {
 				HashMap<String, String> result = results.get(counter);
 				
+				// If any worker is closed and there is no result, change the result to "No results".
+				// If any alive worker still handling the query, the result will change back to a partial result.
 				if (result.get("result").equalsIgnoreCase("processing")) {
 					result.put("result", "No results");
 				}

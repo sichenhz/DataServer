@@ -80,8 +80,8 @@ public class Worker {
 
 		System.out.println("Worker Started.");
 
-		Socket s_database = new Socket(InetAddress.getLocalHost(), 9002);
-		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9003);
+		Socket s_database = new Socket(InetAddress.getLocalHost(), 9000);
+		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9001);
 		new Thread(new Runnable() {
 			public void run() {	
 				receiveTweets(s_database);
