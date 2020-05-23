@@ -8,6 +8,7 @@ public class DataServer {
 
 	static ArrayList<String> passwords = new ArrayList<String>();
 	static ArrayList<HashMap<String, String>> queries = new ArrayList<HashMap<String, String>>();
+	static ArrayList<HashMap<String, String>> results = new ArrayList<HashMap<String, String>>();
 	static HashMap<String, String> indexesHashMap = new HashMap<String, String>();
 
 	public static void main(String[] args) throws Exception {
@@ -28,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+//					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
@@ -92,7 +93,6 @@ public class DataServer {
 		}
 	}
 
-	// index: bind index(0 or 1) to a tweet ID for future query executions
 	public static void insertTweets(Socket s_worker, Socket s_generator, int maximumNumber, int index) {
 		try {
 			DataOutputStream out = new DataOutputStream(s_worker.getOutputStream());
@@ -108,8 +108,10 @@ public class DataServer {
 
 				out.writeUTF(tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
 				counter++;
-				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	" + tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
-				
+				System.out.println("Tweet saved" + "(" + counter + "/" + maximumNumber + "): " + tweet[0] + "	"
+						+ tweet[1] + "	" + tweet[5] + "	" + tweet[10] + "	" + tweet[12]);
+
+				// index: bind index(0 or 1) to a tweet ID for future query executions
 				if (index == 0) {
 					indexesHashMap.put(tweet[0], "0");
 				} else {
@@ -127,55 +129,85 @@ public class DataServer {
 	}
 
 	public static void handleQuery(Socket s, int index) {
+		
+		int counter = 0;
+
 		try {
-			
+
 			System.out.println("Worker" + (index + 1) + " Handle Query service starts to run.");
 
 			DataInputStream in = new DataInputStream(s.getInputStream());
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
-			int counter = 0;
 			while (true) {
 				synchronized (queries) {
 					if (queries.size() > counter) {
 						HashMap<String, String> query = queries.get(counter);
-						// If current tweet is stored in worker1(index == 0) and the query type are 1 or 4
-						// If current tweet is stored in worker2(index == 1) and the query type are 1 or 4
+						String resultString = "";
+						// If current tweet is stored in worker1(index == 0) and the query type are 1 or
+						// 4
+						// If current tweet is stored in worker2(index == 1) and the query type are 1 or
+						// 4
 						// Then only one worker should do the query
 						if (query.get("index").length() > 0) {
-							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+							if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
+									|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
 								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
-								query.put("result", in.readUTF());
-								System.out.println("Query execution ends, the result is: " + query.get("result"));
+								resultString = in.readUTF();
 							}
 							// If the query type are 2 or 3
 							// Then both workers should do the query
 							else if (query.get("index").equalsIgnoreCase("2")) {
 								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
-								String resultString = in.readUTF();
+								resultString = in.readUTF();
 								String[] resultStringArray_new = resultString.split("\t");
 								String timeConsumingString_new = resultStringArray_new[0];
 								String totalNumberString_new = resultStringArray_new[1];
-								if (query.get("result").equalsIgnoreCase("processing")) {
-									query.put("result", Double.parseDouble(timeConsumingString_new) + "	" + totalNumberString_new);
-									System.out.println("Query execution ends, the result is: " + query.get("result"));
-								} else {
-									String[] resultStringArray_old = query.get("result").split("\t");
-									String timeConsumingString_old = resultStringArray_old[0];
-									String totalNumberString_old = resultStringArray_old[1];
-									Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new) + Double.parseDouble(timeConsumingString_old);
-									int totalResult = Integer.parseInt(totalNumberString_new) + Integer.parseInt(totalNumberString_old);
-									query.put("result", totalTimeConsuming + "	" + totalResult);
-									System.out.println("Query execution ends, the result is: " + query.get("result"));
+
+								synchronized (results) {
+									HashMap<String, String> result = results.get(counter);
+
+									if (result.get("result").equalsIgnoreCase("processing")) {
+										resultString = Double.parseDouble(timeConsumingString_new) + "	"
+												+ totalNumberString_new;
+									} else {
+										String[] resultStringArray_old = result.get("result").split("\t");
+										String timeConsumingString_old = resultStringArray_old[0];
+										String totalNumberString_old = resultStringArray_old[1];
+										Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new)
+												+ Double.parseDouble(timeConsumingString_old);
+										int totalResult = Integer.parseInt(totalNumberString_new)
+												+ Integer.parseInt(totalNumberString_old);
+										resultString = totalTimeConsuming + "	" + totalResult;
+									}
 								}
+
 							}
 						}
+
+						if (resultString.length() > 0) {
+							synchronized (results) {
+								HashMap<String, String> result = results.get(counter);
+								result.put("result", resultString);
+								System.out.println("Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
+							}
+						}
+
 						counter++;
 					}
 				}
 			}
 
 		} catch (IOException e) {
+			synchronized (results) {
+				HashMap<String, String> result = results.get(counter);
+				
+				if (result.get("result").equalsIgnoreCase("processing")) {
+					result.put("result", "No results");
+				}
+				System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID") + " is forced to end.");
+
+			}
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
 		} catch (Exception e) {
 			System.out.println(e);
@@ -305,18 +337,17 @@ public class DataServer {
 	 * @return
 	 */
 	public static String getResult(String queryID, String password) {
-		String result = "Invalid query ID";
-		synchronized (queries) {
-			for (int i = 0; i < queries.size(); i++) {
-				HashMap<String, String> query = queries.get(i);
-				if (queryID.equalsIgnoreCase(query.get("queryID"))
-						&& password.equalsIgnoreCase(query.get("password"))) {
-					result = query.get("result");
+		String text = "Invalid query ID";
+		synchronized (results) {
+			for (int i = 0; i < results.size(); i++) {
+				HashMap<String, String> result = results.get(i);
+				if (queryID.equalsIgnoreCase(result.get("queryID")) && password.equalsIgnoreCase(result.get("password"))) {
+					text = result.get("result");
 					break;
 				}
 			}
 		}
-		return result;
+		return text;
 	}
 
 	/**
@@ -351,43 +382,50 @@ public class DataServer {
 		 * -----------------------------------------------------------------------------
 		 * ----------------
 		 */
-		Map<String, String> query = new HashMap<String, String>();
-		String queryID;
 		synchronized (queries) {
-			queryID = Integer.toString(queries.size());
-		}
-		String result = "processing";
-		String deadline = "";
-		String queryType = String.valueOf(type);
+			Map<String, String> query = new HashMap<String, String>();
 
-		query.put("queryID", queryID);
-		query.put("result", result);
-		query.put("deadline", deadline);
-		query.put("password", password);
-		query.put("queryType", queryType);
-		query.put("text", text);
-				
-		if (queryType.equalsIgnoreCase("1") ||
-			queryType.equalsIgnoreCase("4")) {
-			// index == "0" means only worker1 should do the query
-			// index == "1" means only worker2 should do the query
-			// index == "" means both workers should not do the query
-			query.put("index", indexesHashMap.getOrDefault(text, ""));
-			// if there is no tweetID in indexesHashMap, means there must be no result in any databases, so give "no result" directly.
-			if (query.get("index").length() == 0) {
-				query.put("result", text + " doesn't exist in any tweets");
+			String queryID = Integer.toString(queries.size());
+			
+			String deadline = "";
+			String queryType = String.valueOf(type);
+
+			query.put("queryID", queryID);
+			query.put("deadline", deadline);
+			query.put("queryType", queryType);
+			query.put("text", text);
+
+			if (queryType.equalsIgnoreCase("1") || queryType.equalsIgnoreCase("4")) {
+				// index == "0" means only worker1 should do the query
+				// index == "1" means only worker2 should do the query
+				// index == "" means both workers should not do the query
+				query.put("index", indexesHashMap.getOrDefault(text, ""));
+				// if there is no tweetID in indexesHashMap, means there must be no result in
+				// any databases, so give "no result" directly.
+
+			} else {
+				// index == "2" means both workers should do the query and need to put the
+				// answers together
+				query.put("index", "2");
 			}
-		} else {
-			// index == "2" means both workers should do the query and need to put the answers together
-			query.put("index", "2");
-		}
 
-		synchronized (queries) {
 			queries.add((HashMap<String, String>) query);
 			System.out.println("New query added:" + query);
-		}
 
-		return queryID;
+			synchronized (results) {
+				Map<String, String> result = new HashMap<String, String>();
+				result.put("queryID", queryID);
+				result.put("result", "processing");
+				result.put("password", password);
+				
+				if (query.get("index").length() == 0) {
+					result.put("result", text + " doesn't exist in any tweets");
+				}
+				results.add((HashMap<String, String>) result);
+			}
+			
+			return queryID;
+		}
 	}
 
 	public static void handleQueryThreadStart(ServerSocket ss_worker, int index) {

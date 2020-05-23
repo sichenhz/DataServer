@@ -96,7 +96,7 @@ public class Worker {
 		
 	}
 	
-	public static String executeQuery(String type, String text) {
+	public static String executeQuery(String type, String text) throws InterruptedException {
 		/* ---------------------------------TODO Utility function complete--------------------------------------- */
 		/* --- Handle 4 types of operations to get the result --------------------------- */
 		/* --- type 1 means to search a text by a tweet ID(Done) ------------------------------ */
@@ -104,6 +104,9 @@ public class Worker {
 		/* --- type 3 means search a number of tweets from a specific airline ----------- */
 		/* --- type 4 means find the most frequent character in a tweet by a tweet ID(Done) --- */
 		
+		// takeing five seconds to simulate a task
+		Thread.sleep(5000);
+
 		if(type.equals("1"))
 		{
 			return searchTextByID(text);
