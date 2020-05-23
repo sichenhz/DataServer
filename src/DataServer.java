@@ -29,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-//					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
