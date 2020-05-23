@@ -140,21 +140,25 @@ public class DataServer {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
 			while (true) {
+				
 				synchronized (queries) {
+					
 					if (queries.size() > counter) {
+
 						HashMap<String, String> query = queries.get(counter);
 						String resultString = "";
-						// If current tweet is stored in worker1(index == 0) and the query type are 1 or
-						// 4
-						// If current tweet is stored in worker2(index == 1) and the query type are 1 or
-						// 4
-						// Then only one worker should do the query
+
+						// If index == "", means both workers should not do the query
 						if (query.get("index").length() > 0) {
-							if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
-									|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+							
+							// If current tweet is stored in worker1(index=0) and the query type are 1 or 4
+							// If current tweet is stored in worker2(index=1) and the query type are 1 or 4
+							// Then only one worker should do the query
+							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
 								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
 								resultString = in.readUTF();
 							}
+							
 							// If the query type are 2 or 3
 							// Then both workers should do the query
 							else if (query.get("index").equalsIgnoreCase("2")) {
@@ -164,34 +168,29 @@ public class DataServer {
 								String timeConsumingString_new = resultStringArray_new[0];
 								String totalNumberString_new = resultStringArray_new[1];
 
-								synchronized (results) {
-									HashMap<String, String> result = results.get(counter);
+								HashMap<String, String> result = results.get(counter);
 
-									if (result.get("result").equalsIgnoreCase("processing")) {
-										resultString = Double.parseDouble(timeConsumingString_new) + "	"
-												+ totalNumberString_new;
-									} else {
-										String[] resultStringArray_old = result.get("result").split("\t");
-										String timeConsumingString_old = resultStringArray_old[0];
-										String totalNumberString_old = resultStringArray_old[1];
-										Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new)
-												+ Double.parseDouble(timeConsumingString_old);
-										int totalResult = Integer.parseInt(totalNumberString_new)
-												+ Integer.parseInt(totalNumberString_old);
-										resultString = totalTimeConsuming + "	" + totalResult;
-									}
+								if (result.get("result").equalsIgnoreCase("processing")) {
+									resultString = Double.parseDouble(timeConsumingString_new) + "	"
+											+ totalNumberString_new;
+								} else {
+									String[] resultStringArray_old = result.get("result").split("\t");
+									String timeConsumingString_old = resultStringArray_old[0];
+									String totalNumberString_old = resultStringArray_old[1];
+									Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new)
+											+ Double.parseDouble(timeConsumingString_old);
+									int totalResult = Integer.parseInt(totalNumberString_new)
+											+ Integer.parseInt(totalNumberString_old);
+									resultString = totalTimeConsuming + "	" + totalResult;
 								}
-
 							}
 						}
 
+						// Save the result
 						if (resultString.length() > 0) {
-							synchronized (results) {
-								HashMap<String, String> result = results.get(counter);
-								result.put("result", "$" + resultString);
-								System.out.println("Query" + query.get("queryID") + " execution ends, the result is: "
-										+ result.get("result"));
-							}
+							HashMap<String, String> result = results.get(counter);
+							result.put("result", resultString);
+							System.out.println("Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
 						}
 
 						counter++;
@@ -200,20 +199,16 @@ public class DataServer {
 			}
 
 		} catch (IOException e) {
-			synchronized (results) {
-				HashMap<String, String> result = results.get(counter);
+			HashMap<String, String> result = results.get(counter);
 
-				// If any worker is closed and there is no result, change the result to "No
-				// results".
-				// If any alive worker still handling the query, the result will change back to
-				// a partial result.
-				if (result.get("result").equalsIgnoreCase("processing")) {
-					result.put("result", "No results");
-				}
-				System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID")
-						+ " is forced to end.");
-
+			// If any worker is closed and there is no result, change the result to "No results".
+			// If any alive worker still handling the query, the result will change back to a partial result.
+			if (result.get("result").equalsIgnoreCase("processing")) {
+				result.put("result", "No results");
 			}
+			System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID")
+					+ " is forced to end.");
+
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
 		} catch (Exception e) {
 			System.out.println(e);
@@ -243,11 +238,9 @@ public class DataServer {
 
 				if (option.equalsIgnoreCase("1")) {
 
-					synchronized (passwords) {
-						password = Integer.toString(passwords.size());
-						out.writeUTF("Your passcode is " + password);
-						passwords.add(password);
-					}
+					password = Integer.toString(passwords.size());
+					out.writeUTF("Your passcode is " + password);
+					passwords.add(password);
 
 				} else if (option.equalsIgnoreCase("2")) {
 
@@ -258,13 +251,11 @@ public class DataServer {
 						password = in.readUTF();
 						// Send "Connection Success" or "Invalid Password, please enter your password
 						// again:" to the client
-						synchronized (passwords) {
-							if (passwords.contains(password)) {
-								out.writeUTF("Connection Success");
-								break;
-							} else {
-								out.writeUTF("Invalid Password, please enter your password again:");
-							}
+						if (passwords.contains(password)) {
+							out.writeUTF("Connection Success");
+							break;
+						} else {
+							out.writeUTF("Invalid Password, please enter your password again:");
 						}
 					}
 					while (true) {
@@ -344,14 +335,11 @@ public class DataServer {
 	 */
 	public static String getResult(String queryID, String password) {
 		String text = "Invalid query ID";
-		synchronized (results) {
-			for (int i = 0; i < results.size(); i++) {
-				HashMap<String, String> result = results.get(i);
-				if (queryID.equalsIgnoreCase(result.get("queryID"))
-						&& password.equalsIgnoreCase(result.get("password"))) {
-					text = result.get("result");
-					break;
-				}
+		for (int i = 0; i < results.size(); i++) {
+			HashMap<String, String> result = results.get(i);
+			if (queryID.equalsIgnoreCase(result.get("queryID")) && password.equalsIgnoreCase(result.get("password"))) {
+				text = result.get("result");
+				break;
 			}
 		}
 		return text;
@@ -364,7 +352,7 @@ public class DataServer {
 	 * @param type
 	 * @return
 	 */
-	public synchronized static String insertQuery(String text, String password, int type) {
+	public static String insertQuery(String text, String password, int type) {
 		/*
 		 * --------------------------------------TODO
 		 * 2-------------------------------------------------
@@ -426,9 +414,7 @@ public class DataServer {
 		if (query.get("index").length() == 0) {
 			result.put("result", text + " doesn't exist in any tweets");
 		}
-		synchronized (results) {
-			results.add((HashMap<String, String>) result);
-		}
+		results.add((HashMap<String, String>) result);
 
 		return queryID;
 	}
