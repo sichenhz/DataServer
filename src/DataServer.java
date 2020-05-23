@@ -140,39 +140,56 @@ public class DataServer {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
 			while (true) {
-				
+
+				int size;
 				synchronized (queries) {
-					
-					if (queries.size() > counter) {
+					size = queries.size();
+				}
 
-						HashMap<String, String> query = queries.get(counter);
-						String resultString = "";
+				if (size > counter) {
 
-						// If index == "", means both workers should not do the query
-						if (query.get("index").length() > 0) {
-							
-							// If current tweet is stored in worker1(index=0) and the query type are 1 or 4
-							// If current tweet is stored in worker2(index=1) and the query type are 1 or 4
-							// Then only one worker should do the query
-							if ((index == 0 && query.get("index").equalsIgnoreCase("0")) || (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
-								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
-								resultString = in.readUTF();
-							}
-							
-							// If the query type are 2 or 3
-							// Then both workers should do the query
-							else if (query.get("index").equalsIgnoreCase("2")) {
-								out.writeUTF(query.get("queryType") + "	" + query.get("text"));
-								resultString = in.readUTF();
-								String[] resultStringArray_new = resultString.split("\t");
-								String timeConsumingString_new = resultStringArray_new[0];
-								String totalNumberString_new = resultStringArray_new[1];
+					HashMap<String, String> query = queries.get(counter);
+					String resultString = "";
 
-								HashMap<String, String> result = results.get(counter);
+					// If index == "", means both workers should not do the query
+					if (query.get("index").length() > 0) {
 
-								if (result.get("result").equalsIgnoreCase("processing")) {
+						// If current tweet is stored in worker1(index=0) and the query type are 1 or 4
+						// If current tweet is stored in worker2(index=1) and the query type are 1 or 4
+						// Then only one worker should do the query
+						if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
+								|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
+							out.writeUTF(query.get("queryType") + "	" + query.get("text"));
+							resultString = in.readUTF();
+
+							HashMap<String, String> result = results.get(counter);
+							result.put("result", resultString);
+							System.out.println(
+									"Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
+
+						}
+
+						// If the query type are 2 or 3
+						// Then both workers should do the query
+						else if (query.get("index").equalsIgnoreCase("2")) {
+							out.writeUTF(query.get("queryType") + "	" + query.get("text"));
+							resultString = in.readUTF();
+							String[] resultStringArray_new = resultString.split("\t");
+							String timeConsumingString_new = resultStringArray_new[0];
+							String totalNumberString_new = resultStringArray_new[1];
+
+							HashMap<String, String> result = results.get(counter);
+
+							synchronized (result) {
+								if (result.get("result").equalsIgnoreCase("processing") ||
+									result.get("result").equalsIgnoreCase("uncompleted")) {
 									resultString = Double.parseDouble(timeConsumingString_new) + "	"
 											+ totalNumberString_new;
+									
+									result.put("result", resultString);
+
+									System.out.println("Query" + query.get("queryID")
+									+ " execution ends, the result is: " + resultString);
 								} else {
 									String[] resultStringArray_old = result.get("result").split("\t");
 									String timeConsumingString_old = resultStringArray_old[0];
@@ -182,32 +199,30 @@ public class DataServer {
 									int totalResult = Integer.parseInt(totalNumberString_new)
 											+ Integer.parseInt(totalNumberString_old);
 									resultString = totalTimeConsuming + "	" + totalResult;
+
+									result.put("result", resultString);
+									
+									System.out.println("Query" + query.get("queryID")
+											+ " execution ends, the result is: " + resultString);
+
 								}
 							}
 						}
-
-						// Save the result
-						if (resultString.length() > 0) {
-							HashMap<String, String> result = results.get(counter);
-							result.put("result", resultString);
-							System.out.println("Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
-						}
-
-						counter++;
 					}
+					counter++;
 				}
 			}
 
 		} catch (IOException e) {
 			HashMap<String, String> result = results.get(counter);
 
-			// If any worker is closed and there is no result, change the result to "No results".
+			// If any worker is closed, change the result to "uncompleted".
 			// If any alive worker still handling the query, the result will change back to a partial result.
 			if (result.get("result").equalsIgnoreCase("processing")) {
-				result.put("result", "No results");
+				result.put("result", "uncompleted");
 			}
 			System.out.println("Worker" + (index + 1) + " is closed unexpectedly. QueryID" + result.get("queryID")
-					+ " is forced to end.");
+					+ " is forced to end. The current result is " + result.get("uncompleted"));
 
 			System.out.println("Exception: An I/O error occurs when opening the socket or waiting for a connection");
 		} catch (Exception e) {
