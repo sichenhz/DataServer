@@ -96,13 +96,15 @@ public class DataServer {
 	public static void insertTweets(Socket s_worker, Socket s_generator, int maximumNumber, int index) {
 		try {
 			DataOutputStream out = new DataOutputStream(s_worker.getOutputStream());
+			DataInputStream in = new DataInputStream(s_worker.getInputStream());
+
+			System.out.println(in.readUTF());
 
 			// receive tweet from Data Stream Generator
-
 			int counter = 0;
 			while (counter < maximumNumber) {
 				// Read a tweet string from the server
-				DataInputStream in = new DataInputStream(s_generator.getInputStream());
+				in = new DataInputStream(s_generator.getInputStream());
 				String tweetStr = in.readUTF();
 				String[] tweet = tweetStr.split("\t");
 
