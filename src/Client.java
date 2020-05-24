@@ -63,7 +63,7 @@ public class Client {
 						// 4 to find the most frequent character in a tweet by a tweet ID
 						// 5 to get a status/result by a query ID
 						// 6 to exit
-						for (int i = 0; i < 7; i++) {
+						for (int i = 0; i < 8; i++) {
 							System.out.println(in.readUTF());
 						}
 
@@ -77,12 +77,12 @@ public class Client {
 							out.writeUTF(appendingDeadline(scanner.nextLine()));
 							System.out.println(in.readUTF());
 							
-						} else if (option.equalsIgnoreCase("5")) {
+						} else if (option.equalsIgnoreCase("5") || option.equalsIgnoreCase("6")) {
 							System.out.println(in.readUTF());
 							out.writeUTF(scanner.nextLine());
 							System.out.println(in.readUTF());
 							
-						} else if (option.equalsIgnoreCase("6")) {
+						} else if (option.equalsIgnoreCase("7")) {
 							break;
 
 						} else {
