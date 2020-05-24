@@ -10,7 +10,8 @@ public class DataServer {
 	static ArrayList<HashMap<String, String>> queries = new ArrayList<HashMap<String, String>>();
 	static ArrayList<HashMap<String, String>> results = new ArrayList<HashMap<String, String>>();
 	static HashMap<String, String> indexesHashMap = new HashMap<String, String>();
-
+	static int currentQueryIndex = 0;
+	
 	public static void main(String[] args) throws Exception {
 
 		System.out.println("Data Server Started.");
@@ -147,7 +148,8 @@ public class DataServer {
 				}
 
 				if (size > counter) {
-
+					
+					currentQueryIndex = counter + 1;
 					HashMap<String, String> query = queries.get(counter);
 					String resultString = "";
 
@@ -395,9 +397,14 @@ public class DataServer {
 		Map<String, String> query = new HashMap<String, String>();
 
 		String queryID = Integer.toString(queries.size());
-
-		String deadline = "";
 		String queryType = String.valueOf(type);
+		String deadline = "";
+
+		String[] textArray = text.split("\t");
+		if (textArray.length == 2) {
+			text = textArray[0];
+			deadline = textArray[1];
+		}
 
 		query.put("queryID", queryID);
 		query.put("deadline", deadline);
@@ -417,9 +424,35 @@ public class DataServer {
 			// answers together
 			query.put("index", "2");
 		}
-
-		queries.add((HashMap<String, String>) query);
-		System.out.println("New query added:" + query);
+		
+		// insert as a ergent query
+		if (deadline.length() > 0 && queries.size() > currentQueryIndex) {
+			for (int i = currentQueryIndex; i < queries.size(); i++) {
+				if (queries.get(i).get("deadline").length() > 0) {
+					if (Integer.parseInt(deadline) >= Integer.parseInt(queries.get(i).get("deadline"))) {
+						continue;
+					} else {
+						queries.add(i, (HashMap<String, String>) query);
+						System.out.println("New query added as a urgent query(current order:" + i + " " + "current deadline:<" + deadline + ">)" + query);
+						break;
+					}
+				} else {
+					queries.add(i, (HashMap<String, String>) query);
+					System.out.println("New query added as a urgent query(current order:" + i + " " + "current deadline:<" + deadline + ">)" + query);
+					break;
+				}
+			}
+		}
+		// insert as a normal query
+		else {
+			queries.add((HashMap<String, String>) query);
+			
+			if (deadline.length() > 0) {
+				System.out.println("New query added as a urgent query(current order:" + (queries.size() - 1) + " " + "current deadline:<" + deadline + ">)" + query);
+			} else {
+				System.out.println("New query added as a normal query(current order:" + (queries.size() - 1) + " " + "current deadline:<" + deadline + ">)" + query);
+			}
+		}
 
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("queryID", queryID);
@@ -428,9 +461,10 @@ public class DataServer {
 
 		if (query.get("index").length() == 0) {
 			result.put("result", text + " doesn't exist in any tweets");
+			System.out.println("Query" + queryID + " execution ends, the result is: " + text + " doesn't exist in any tweets");
 		}
 		results.add((HashMap<String, String>) result);
-
+		
 		return queryID;
 	}
 

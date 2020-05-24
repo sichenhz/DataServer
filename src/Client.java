@@ -74,8 +74,7 @@ public class Client {
 
 						if (option.equalsIgnoreCase("1") || option.equalsIgnoreCase("2") || option.equalsIgnoreCase("3") || option.equalsIgnoreCase("4")) {
 							System.out.println(in.readUTF());
-							//out.writeUTF(appendingDeadline(scanner.nextLine()));
-							out.writeUTF(scanner.nextLine());
+							out.writeUTF(appendingDeadline(scanner.nextLine()));
 							System.out.println(in.readUTF());
 							
 						} else if (option.equalsIgnoreCase("5")) {
@@ -125,10 +124,10 @@ public class Client {
 		int deadline = rand.nextInt(10000); // 10 seconds in milliseconds
 
 		// assuming that any deadline less than a second is regarded as ASAP
-		if (deadline < 1000) {
-			return option; // appends no deadline
+		if (deadline < 5000) {
+			return option + "	" + deadline;
 		} else {
-			return option + " " + deadline;
+			return option; // appends no deadline
 		}
 		
 	}
