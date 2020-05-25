@@ -10,7 +10,7 @@ public class DataServer {
 	static ArrayList<HashMap<String, String>> queries = new ArrayList<HashMap<String, String>>();
 	static HashMap<String, String> databaseIndexes = new HashMap<String, String>();
 	static int currentQueryIndex = 0;
-	
+
 	public static void main(String[] args) throws Exception {
 
 		System.out.println("Data Server Started.");
@@ -29,7 +29,7 @@ public class DataServer {
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
 
 					// run the first worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker1.jar");
+					processFile("/Users/guo/git/DataServer/src/Worker1.jar");
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
 					Socket s_worker1 = ss_worker1.accept();
@@ -48,7 +48,7 @@ public class DataServer {
 					System.out.println("Worker1 Database service is over.");
 
 					// run the second worker
-					processFile("/Users/Jason/Github/DataServer/src/Worker2.jar");
+					processFile("/Users/guo/git/DataServer/src/Worker2.jar");
 					// open port 9002 for worker2 to save tweets
 					ServerSocket ss_worker2 = new ServerSocket(9002);
 					Socket s_worker2 = ss_worker2.accept();
@@ -149,7 +149,7 @@ public class DataServer {
 				}
 
 				if (size > counter) {
-					
+
 					currentQueryIndex = counter + 1;
 					HashMap<String, String> query = queries.get(counter);
 					String resultString = "";
@@ -163,9 +163,18 @@ public class DataServer {
 						if ((index == 0 && query.get("index").equalsIgnoreCase("0"))
 								|| (index == 1 && query.get("index").equalsIgnoreCase("1"))) {
 							out.writeUTF(query.get("queryType") + "	" + query.get("text"));
+
 							resultString = in.readUTF();
 
 							HashMap<String, String> result = queries.get(counter);
+
+							String[] resultStringArray = resultString.split("\\s+");
+							String timeConsumingString = resultStringArray[0];
+							
+							StringBuilder sb = new StringBuilder(resultString);
+							String resultWithoutTime = sb.delete(0, 4).toString() ;
+							
+							resultString = "Your bill is "+ calculateBill(Double.parseDouble(timeConsumingString)) + ", Result found:" + resultWithoutTime;
 							result.put("result", resultString);
 							System.out.println(
 									"Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
@@ -177,34 +186,49 @@ public class DataServer {
 						else if (query.get("index").equalsIgnoreCase("2")) {
 							out.writeUTF(query.get("queryType") + "	" + query.get("text"));
 							resultString = in.readUTF();
-							String[] resultStringArray_new = resultString.split("\t");
+							String[] resultStringArray_new = resultString.split("\\s+");
 							String timeConsumingString_new = resultStringArray_new[0];
 							String totalNumberString_new = resultStringArray_new[1];
 
 							HashMap<String, String> result = queries.get(counter);
 
 							synchronized (queries) {
-								if (result.get("result").equalsIgnoreCase("processing") ||
-									result.get("result").equalsIgnoreCase("uncompleted")) {
-									resultString = Double.parseDouble(timeConsumingString_new) + "	"
-											+ totalNumberString_new;
-									
+								if (result.get("result").equalsIgnoreCase("processing")
+										|| result.get("result").equalsIgnoreCase("uncompleted")) {
+									if (result.get("result").equalsIgnoreCase("uncompleted")) {
+										System.out.println(
+												"One of our worker is not working, partial result will be sent");
+									}
+									resultString = "Your bill is: "
+											+ calculateBill(Double.parseDouble(timeConsumingString_new))
+											+ " Results found: " + totalNumberString_new;
+
 									result.put("result", resultString);
 
 									System.out.println("Query" + query.get("queryID")
-									+ " execution ends, the result is: " + resultString);
+											+ " execution ends, the result is: " + resultString);
 								} else {
-									String[] resultStringArray_old = result.get("result").split("\t");
-									String timeConsumingString_old = resultStringArray_old[0];
-									String totalNumberString_old = resultStringArray_old[1];
+									String[] resultStringArray_old = result.get("result").split("\\s+");
+									String timeConsumingString_old = resultStringArray_old[3];
+									String totalNumberString_old = resultStringArray_old[6];
+
+									// Kill '$' if it exists
+									if (timeConsumingString_old.indexOf("$") != -1) {
+										StringBuilder sb = new StringBuilder(timeConsumingString_old);
+										timeConsumingString_old = sb.deleteCharAt(0).toString();
+										System.out.println("timeConsumingString_old is: " + timeConsumingString_old);
+									}
+
 									Double totalTimeConsuming = Double.parseDouble(timeConsumingString_new)
-											+ Double.parseDouble(timeConsumingString_old);
+											+ Double.parseDouble(timeConsumingString_old) * 1000;
 									int totalResult = Integer.parseInt(totalNumberString_new)
 											+ Integer.parseInt(totalNumberString_old);
-									resultString = totalTimeConsuming + "	" + totalResult;
+
+									resultString = "Your bill is: " + calculateBill(totalTimeConsuming)
+											+ "	Results found:" + totalResult;
 
 									result.put("result", resultString);
-									
+
 									System.out.println("Query" + query.get("queryID")
 											+ " execution ends, the result is: " + resultString);
 
@@ -220,7 +244,8 @@ public class DataServer {
 			HashMap<String, String> result = queries.get(counter);
 
 			// If any worker is closed, change the result to "uncompleted".
-			// If any alive worker still handling the query, the result will change back to a partial result.
+			// If any alive worker still handling the query, the result will change back to
+			// a partial result.
 			if (result.get("result").equalsIgnoreCase("processing")) {
 				result.put("result", "uncompleted");
 			}
@@ -369,7 +394,7 @@ public class DataServer {
 		}
 		return text;
 	}
-	
+
 	/**
 	 * 
 	 * @param queryID
@@ -378,14 +403,15 @@ public class DataServer {
 	 */
 	public static String cancelQuery(String queryID, String password) {
 		String text = "Invalid query ID";
-				
-		for (int i = 0; i < queries.size(); i++) {			
+
+		for (int i = 0; i < queries.size(); i++) {
 			HashMap<String, String> query = queries.get(i);
 			if (queryID.equalsIgnoreCase(query.get("queryID")) && password.equalsIgnoreCase(query.get("password"))) {
-				
-				// 2 > 
+
+				// 2 >
 				if (currentQueryIndex > i) {
-					text = "Query" + query.get("queryID") + " is processing or has been processed, cannot be cancelled.";
+					text = "Query" + query.get("queryID")
+							+ " is processing or has been processed, cannot be cancelled.";
 				} else {
 					text = "Query" + query.get("queryID") + " cancelled.";
 					queries.remove(i);
@@ -396,6 +422,10 @@ public class DataServer {
 			}
 		}
 		return text;
+	}
+
+	public static String calculateBill(double totalTimeUsed) {
+		return "$" + totalTimeUsed * 0.001;
 	}
 
 	/**
@@ -454,16 +484,17 @@ public class DataServer {
 			// index == "1" means only worker2 should do the query
 			// index == "" means both workers should not do the query
 			query.put("index", databaseIndexes.getOrDefault(text, ""));
-			// if there is no tweetID in indexesHashMap, means there must be no result in
-			// any databases, so give "no result" directly.
-
+			/*
+			 * if there is no tweetID in indexesHashMap, means there must be no result in
+			 * any databases, so give "no result" directly.
+			 */
 		} else {
 			// index == "2" means both workers should do the query and need to put the
 			// answers together
 			query.put("index", "2");
 		}
-		
-		// insert as a ergent query
+
+		// insert as an urgent query
 		if (deadline.length() > 0 && queries.size() > currentQueryIndex) {
 			for (int i = currentQueryIndex; i < queries.size(); i++) {
 				if (queries.get(i).get("deadline").length() > 0) {
@@ -471,12 +502,14 @@ public class DataServer {
 						continue;
 					} else {
 						queries.add(i, (HashMap<String, String>) query);
-						System.out.println("New query added as a urgent query(current order:" + i + " " + "current deadline:<" + deadline + ">)" + query);
+						System.out.println("New query added as a urgent query(current order:" + i + " "
+								+ "current deadline:<" + deadline + ">)" + query);
 						break;
 					}
 				} else {
 					queries.add(i, (HashMap<String, String>) query);
-					System.out.println("New query added as a urgent query(current order:" + i + " " + "current deadline:<" + deadline + ">)" + query);
+					System.out.println("New query added as a urgent query(current order:" + i + " "
+							+ "current deadline:<" + deadline + ">)" + query);
 					break;
 				}
 			}
@@ -484,19 +517,22 @@ public class DataServer {
 		// insert as a normal query
 		else {
 			queries.add((HashMap<String, String>) query);
-			
+
 			if (deadline.length() > 0) {
-				System.out.println("New query added as a urgent query(current order:" + (queries.size() - 1) + " " + "current deadline:<" + deadline + ">)" + query);
+				System.out.println("New query added as a urgent query(current order:" + (queries.size() - 1) + " "
+						+ "current deadline:<" + deadline + ">)" + query);
 			} else {
-				System.out.println("New query added as a normal query(current order:" + (queries.size() - 1) + " " + "current deadline:<" + deadline + ">)" + query);
+				System.out.println("New query added as a normal query(current order:" + (queries.size() - 1) + " "
+						+ "current deadline:<" + deadline + ">)" + query);
 			}
 		}
 
 		if (query.get("index").length() == 0) {
 			query.put("result", text + " doesn't exist in any tweets");
-			System.out.println("Query" + queryID + " execution ends, the result is: " + text + " doesn't exist in any tweets");
+			System.out.println(
+					"Query" + queryID + " execution ends, the result is: " + text + " doesn't exist in any tweets");
 		}
-		
+
 		return queryID;
 	}
 
