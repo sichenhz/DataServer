@@ -1,11 +1,27 @@
 ### How to run DataServer
 
-1. Configure the path of Tweets.txt for DataStreamGenerator in Run Configurations.
+1. cd to src directory
+``` bash
+    cd /Users/Jason/Github/DataServer/src
+```
 
-![icon](https://img.alicdn.com/imgextra/i3/135480037/O1CN01t9aUgG1C8zFbkBmwd_!!135480037.jpg)
+2. Login to the instance by SSH
+``` bash
+    ssh -i kit318tut.pem ubuntu@115.146.87.21
+```
 
-2. You should run DataServer and DataStreamGenerator first as they are both servers.
+3. Run DataStreamGenerator
+``` bash
+    java -jar /home/ubuntu/upload/DataStreamGenerator.jar
+```
 
-3. Then you should run Worker as it is a slave of DataServer.
+4. Run DataServer
+``` bash
+    java -jar /home/ubuntu/upload/DataServer.jar
+```
 
-4. Finally you can run Client.
+5. back to local cmd and cd to bin directory and run Client.class for testing the server
+``` bash
+    cd ../bin
+    java Client
+```
