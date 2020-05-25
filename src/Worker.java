@@ -69,7 +69,6 @@ public class Worker {
 				String queryResultString = executeQuery(type, text);
 				long end = System.currentTimeMillis();
 				out.writeUTF((end - start) + "	" + queryResultString);
-//				out.writeUTF("Time taken: " + (end-start) + " ms to " + "get result:	"+ queryResultString);	
 
 			}
 		} catch (NullPointerException e) {
@@ -156,7 +155,6 @@ public class Worker {
 	 *         Test passed
 	 */
 	private static String searchTextByID(String tweetID) {
-		// start a timer
 		synchronized (tweets) {
 			if (tweets.size() != 0) {
 
@@ -166,7 +164,6 @@ public class Worker {
 
 					System.out.println(tweetID + "---" + map.get("tweet_id"));
 					if (map.get("tweet_id").equals(tweetID)) {
-						// end a timer
 						return map.get("text");
 					}
 				}
