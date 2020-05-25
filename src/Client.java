@@ -11,7 +11,7 @@ public class Client {
 			Scanner scanner = new Scanner(System.in);
 
 			// Instantiate a socket
-			Socket s = new Socket(InetAddress.getLocalHost(), 9098);
+			Socket s = new Socket(InetAddress.getByName("115.146.87.21"), 9098);
 
 			// Instantiate input and output streams
 			DataInputStream in = new DataInputStream(s.getInputStream());

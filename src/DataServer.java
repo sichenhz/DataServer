@@ -1,10 +1,46 @@
 import java.net.*;
 import java.io.*;
 import java.util.*;
-import java.text.SimpleDateFormat;
-import java.text.SimpleDateFormat;
+import com.jcraft.jsch.*;
+import org.openstack4j.api.Builders;
+import org.openstack4j.api.OSClient.OSClientV3;
+import org.openstack4j.model.common.Identifier;
+import org.openstack4j.model.compute.Server;
+import org.openstack4j.model.compute.ServerCreate;
+import org.openstack4j.openstack.OSFactory;
 
 public class DataServer {
+
+	OSClientV3 os = null;
+
+	public DataServer() {
+		os = OSFactory.builderV3() // Setting up openstack client with OpenStack factory
+				.endpoint("https://keystone.rc.nectar.org.au:5000/v3/") // Openstack endpoint
+				.credentials("sichenw@utas.edu.au", "NmQ0ZDM4NWFkMzZmNmMx", Identifier.byName("Default"))// Passing
+																											// credentials
+				.scopeToProject(Identifier.byId("243520c34fe64ef89ab1b070c5d1a3f0")) // Project id
+				.authenticate(); // verify the authentication
+	}
+
+	// Creating a new instance or VM or Server
+	public String createServer(int index) {
+
+		String script = Base64.getEncoder()
+				.encodeToString(("#!/bin/bash \n" + "sudo mkdir /home/ubuntu/temp").getBytes()); // encoded with Base64
+		String name = "Worker1";
+		if (index == 1) {
+			name = "Worker2";
+		}
+
+		ServerCreate server = Builders.server()// creating a VM server
+				.name(name)// VM or instance name
+				.flavor("406352b0-2413-4ea6-b219-1a4218fd7d3b") // flavour id
+				.image("98cded64-6097-4803-b743-a886ea054822") // image id
+				.keypairName("kit318tut") // key pair name
+				.addSecurityGroup("DefaultSecurity").userData(script).build(); // build the VM with above configuration
+
+		return os.compute().servers().boot(server).getId();
+	}
 
 	static ArrayList<String> passwords = new ArrayList<String>();
 	static ArrayList<HashMap<String, String>> queries = new ArrayList<HashMap<String, String>>();
@@ -26,17 +62,24 @@ public class DataServer {
 			public void run() {
 				try {
 					// waiting the Tweet generator server
+//					Socket s_generator = new Socket(InetAddress.getByName("115.146.87.116"), 9099);
 					Socket s_generator = new Socket(InetAddress.getLocalHost(), 9099);
-
-					// run the first worker
-					processFile("/Users/guo/git/DataServer/src/Worker1.jar");
+					
 					// open port 9000 for worker1 to save tweets
 					ServerSocket ss_worker1 = new ServerSocket(9000);
-					Socket s_worker1 = ss_worker1.accept();
-					System.out.println("Worker1 Database service starts to run.");
-
 					// open port 9001 for worker1 to handle query
 					handleQueryThreadStart(new ServerSocket(9001), 0);
+
+					// Creating a new VM
+					DataServer openstack = new DataServer();
+//					openstack.createServer(0);
+
+					// run the first worker
+//					sysCommand(getWorkerIP(openstack, 0), "java -jar /home/ubuntu/upload/Worker1.jar", "/home/ubuntu/upload/xguo1.pem");
+					processFile("/home/ubuntu/upload/Worker1.jar");
+					
+					Socket s_worker1 = ss_worker1.accept();
+					System.out.println("Worker1 Database service starts to run.");
 
 					// start inserting data into the worker1
 					insertTweets(s_worker1, s_generator, 10, 0);
@@ -47,15 +90,20 @@ public class DataServer {
 					ss_worker1.close();
 					System.out.println("Worker1 Database service is over.");
 
-					// run the second worker
-					processFile("/Users/guo/git/DataServer/src/Worker2.jar");
+//					// run the second worker
+//					processFile("/home/ubuntu/upload/Worker2.jar");
 					// open port 9002 for worker2 to save tweets
 					ServerSocket ss_worker2 = new ServerSocket(9002);
-					Socket s_worker2 = ss_worker2.accept();
-					System.out.println("Worker2 Database service starts to run.");
-
 					// open port 9003 for worker2 to handle query
 					handleQueryThreadStart(new ServerSocket(9003), 1);
+
+					// Creating a new VM
+					openstack.createServer(1);
+					sysCommand(getWorkerIP(openstack, 1), "java -jar /home/ubuntu/upload/Worker2.jar",
+							"/home/ubuntu/upload/kit318tut.pem");
+
+					Socket s_worker2 = ss_worker2.accept();
+					System.out.println("Worker2 Database service starts to run.");
 
 					// start inserting data into the worker2
 					insertTweets(s_worker2, s_generator, 10, 1);
@@ -170,11 +218,12 @@ public class DataServer {
 
 							String[] resultStringArray = resultString.split("\\s+");
 							String timeConsumingString = resultStringArray[0];
-							
+
 							StringBuilder sb = new StringBuilder(resultString);
-							String resultWithoutTime = sb.delete(0, 4).toString() ;
-							
-							resultString = "Your bill is "+ calculateBill(Double.parseDouble(timeConsumingString)) + ", Result found:" + resultWithoutTime;
+							String resultWithoutTime = sb.delete(0, 4).toString();
+
+							resultString = "Your bill is " + calculateBill(Double.parseDouble(timeConsumingString))
+									+ ", Result found:" + resultWithoutTime;
 							result.put("result", resultString);
 							System.out.println(
 									"Query" + query.get("queryID") + " execution ends, the result is: " + resultString);
@@ -566,5 +615,73 @@ public class DataServer {
 			return false;
 		}
 		return str.matches("\\d+");
+	}
+
+	public static String getWorkerIP(DataServer openstack, int index) {
+
+		String IP = "";
+		while (IP.equalsIgnoreCase("")) {
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			for (Server server : openstack.os.compute().servers().list()) {
+				String name = "Worker1";
+				if (index == 1) {
+					name = "Worker2";
+				}
+				if (server.getName().equalsIgnoreCase(name)) {
+					System.out.println("Waiting for instance to avtive..." + server.getStatus().name());
+					if (server.getStatus().name().equalsIgnoreCase("Active")) {
+						System.out.println("Instance is activated. The current IP is " + server.getAccessIPv4());
+						IP = server.getAccessIPv4();
+					}
+				}
+			}
+		}
+		try {
+			Thread.sleep(20000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return IP;
+	}
+
+	public static void sysCommand(String hostIp, String cmd, String pk) {
+		try {
+			JSch jsch = new JSch();
+			Session session = jsch.getSession("ubuntu", hostIp, 22);
+			jsch.addIdentity(pk);
+
+			Properties config = new Properties();
+			config.put("StrictHostKeyChecking", "no");
+			session.setConfig(config);
+
+			session.setTimeout(1500);
+			session.connect();
+
+			execCmd(cmd, session);
+
+			session.disconnect();
+			
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
+	public static void execCmd(String command, Session session) throws JSchException {
+		Channel channel = null;
+		try {
+			if (command != null) {
+				channel = session.openChannel("exec");
+				((ChannelExec) channel).setCommand(command);
+				channel.connect();
+			}
+		} catch (JSchException e) {
+			e.printStackTrace();
+		} finally {
+			channel.disconnect();
+		}
 	}
 }

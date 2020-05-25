@@ -14,9 +14,12 @@ public class DataStreamGenerator {
 			
 			ServerSocket ss = new ServerSocket(9099);
 			Socket s = ss.accept();
+			
+			System.out.println("Socket connection succeed.");
+
 	    	DataOutputStream out = new DataOutputStream(s.getOutputStream());  
 
-			String txtFile = args[0];
+			String txtFile = "/home/ubuntu/upload/Tweets.txt";
 			String line = "";
 			int counter = 0;
 			long timeInterval = 1L;

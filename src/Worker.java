@@ -36,9 +36,9 @@ public class Worker {
 				tweetMap.put("airline", tweet[2]);
 				tweetMap.put("text", tweet[3]);
 				tweetMap.put("tweet_created", tweet[4]);
-				tweets.add((HashMap<String, String>) tweetMap);
+				tweets.add((HashMap<String, String>) tweetMap);				
 			}
-
+			
 		} catch (NullPointerException e) {
 
 			System.out.println("Exception: Client Disconnected");
@@ -82,10 +82,12 @@ public class Worker {
 
 	public static void main(String[] args) throws Exception {
 
-		System.out.println("Worker Started.");
+		System.out.println("Worker2 Started.");
 
-		Socket s_database = new Socket(InetAddress.getLocalHost(), 9002);
-		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9003);
+//		Socket s_database = new Socket(InetAddress.getLocalHost(), 9002);
+//		Socket s_handle = new Socket(InetAddress.getLocalHost(), 9003);
+		Socket s_database = new Socket(InetAddress.getByName("115.146.87.21"), 9002);
+		Socket s_handle = new Socket(InetAddress.getByName("115.146.87.21"), 9003);
 		new Thread(new Runnable() {
 			public void run() {
 				receiveTweets(s_database);
