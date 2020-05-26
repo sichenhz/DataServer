@@ -15,7 +15,7 @@
     java -jar /home/ubuntu/upload/DataStreamGenerator.jar
 ```
 
-4. Run DataServer
+4. Run DataServer (Another CMD window must be opened, and repeat step 2)
 ``` bash
     java -jar /home/ubuntu/upload/DataServer.jar
 ```
