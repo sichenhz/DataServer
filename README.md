@@ -25,3 +25,8 @@
     cd ../bin
     java Client
 ```
+6. If ports have been occupied, you should kill the existing java processes in the instance first
+``` bash
+    ps -ef|grep java
+    kill -9 xxxx
+```
