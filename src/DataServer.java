@@ -474,7 +474,7 @@ public class DataServer {
 	}
 
 	public static String calculateBill(double totalTimeUsed) {
-		return "$" + totalTimeUsed * 0.001;
+		return "$" + Math.round(totalTimeUsed * 0.001);
 	}
 
 	/**
